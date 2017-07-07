@@ -46,7 +46,14 @@ namespace NLog.Elmah
         /// <param name="errorLog"></param>
         public ElmahTarget(ErrorLog errorLog)
         {
-            errorLog.ApplicationName = "Nlog";
+            try
+            {
+                errorLog.ApplicationName = "Nlog";
+            }
+            catch 
+            {
+                //if elmah module application name is already initialized. 
+            }
             _errorLog = errorLog;
             LogLevelAsType = false;
         }
@@ -69,9 +76,13 @@ namespace NLog.Elmah
             error.Time = GetCurrentDateTime == null ? logEvent.TimeStamp : GetCurrentDateTime();
             error.HostName = Environment.MachineName;
             error.Detail = logEvent.Exception == null ? logMessage : logEvent.Exception.StackTrace;
+
+            
+
             if (error.User == "")
             {
-                error.User = GetIP();
+                string ip = GetIP();
+                error.User = ip;
             }
             error.Source = logEvent.LoggerName;
             _errorLog.Log(error);
@@ -93,7 +104,8 @@ namespace NLog.Elmah
             {
                 ip = HttpContext.Current.Request.ServerVariables["REMOTE_ADDR"];
             }
-            if (ip.Contains(":"))
+            if (ip.Equals(@"::1")) return ip;
+            if (ip.Contains(":") )
             {
                 //ipaddress can be composed of ip:srcport. so grab just the ip component if so. 
                 return ip.Split(':')[0];
